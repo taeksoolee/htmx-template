@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Form</title>
+  {% include 'import/header.html' %}
+</head>
+<body>
+
+  <main>
+    <header>
+      <a hx-boost="true" href="/">
+      Home
+    </a>
+    </header>
+    <section>
+      <form>
+        <header><h2>🔐 login form</h2></header>
+
+        <label for="email">email</label>
+        <input type="text" id="email" name="email" size="20" />
+        <label for="password">password</label>
+        <input type="text" id="password" name="password" size="20" />
+        <br />
+        <button type="submit">Login</button>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+
+  </footer>
+</body>
+</html>
+
