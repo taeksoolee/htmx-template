@@ -7,24 +7,40 @@
   {% include 'import/header.html' %}
 </head>
 <body>
+  <template id="custom-form-template">
+    <style>
+      /* CSS 스타일링은 여기에 추가할 수 있습니다. */
+    </style>
+    <div id="custom-form-container">
+      <form id="custom-form">
+        <slot name="content"></slot>
+      </form>
+    </div>
+  </template>
 
   <main>
     <header>
-      <a hx-boost="true" href="/">
-      Home
-    </a>
+      <a hx-boost="true" href="/">🏠 Home</a>
     </header>
-    <section>
-      <form>
-        <header><h2>🔐 login form</h2></header>
 
-        <label for="email">email</label>
-        <input type="text" id="email" name="email" size="20" />
-        <label for="password">password</label>
-        <input type="text" id="password" name="password" size="20" />
-        <br />
-        <button type="submit">Login</button>
-      </form>
+    <!-- <form onsubmit="return false;">
+      <input value="" name="refresh" />
+      <button hx-post="/auth/refresh" type="submit"></button>
+    </form> -->
+
+    <section>
+      <login-wrapper login-path="/auth">
+        <form>
+          <header><h2>🔐 login form</h2></header>
+
+          <label for="email">email</label>
+          <input type="text" id="email" name="email" size="20" />
+          <label for="password">password</label>
+          <input type="password" id="password" name="password" size="20" autocomplete="current-password"/>
+          <br />
+          <button type="submit">Login</button>
+        </form>
+      </login-wrapper>
     </section>
   </main>
 
