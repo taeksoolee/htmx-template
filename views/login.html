@@ -28,19 +28,16 @@
       <button hx-post="/auth/refresh" type="submit"></button>
     </form> -->
 
-    <section>
-      <login-wrapper login-path="/auth">
-        <form>
-          <header><h2>🔐 login form</h2></header>
-
-          <label for="email">email</label>
-          <input type="text" id="email" name="email" size="20" />
-          <label for="password">password</label>
-          <input type="password" id="password" name="password" size="20" autocomplete="current-password"/>
-          <br />
-          <button type="submit">Login</button>
-        </form>
-      </login-wrapper>
+    <section 
+      hx-get="/components/login-form" 
+      hx-trigger="load"
+      x-target-5*="#serious-errors"
+      hx-target-404="#not-found"
+    >
+      <!-- <h1>Authorized</h1> -->
+      <div class="htmx-indicator">...</div>
+      <div id="serious-errors"></div>
+      <div id="not-found"></div>
     </section>
   </main>
 

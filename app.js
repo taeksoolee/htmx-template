@@ -39,11 +39,17 @@ files
   .map(res => res.replace(new RegExp('^'+viewsDir), ''))
   .map(res => res.replace(/.html$/, ''))
   .forEach(file => {
+    if (file.startsWith('/components')) return;
     app.get(`${file.replace(/index/g, '')}`, (req, res) => {
       res.render(`${file.replace(/^\//, '')}`);
     });
   });
 
+app.get('/components/login-form', (req, res) => {
+  // throw Error();
+  // res.sendStatus(404);
+  res.render('components/login-form');
+});
 
 const login = (email, password) => {
   if (email !== 'ts.lee@gmail.com') return false;
@@ -62,7 +68,7 @@ app.post('/auth', (req, res) => {
     return;
   }
   
-  res.json({
+  res.status(201).json({
     access: jwt.sign({
       email,
       type: 'access',
@@ -87,7 +93,7 @@ app.post('/auth/refresh', (req, res) => {
     if (moment().isAfter(payload.exp * 1000)) throw Error();
     const {email} = payload;
 
-    res.json({
+    res.status(201).json({
       access: jwt.sign({
         email,
         type: 'access',
@@ -101,6 +107,29 @@ app.post('/auth/refresh', (req, res) => {
       message: 'Unauthorized'
     });
   }
+});
+
+app.post('/auth/verify', (req, res) => {
+  const { access } = req.body;
+
+  try {
+    const payload = jwt.verify(access, jwtSecret);
+
+    if (moment().isAfter(payload.exp * 1000)) throw Error();
+
+    res.sendStatus(204).send();
+  } catch(err) {
+    console.log(err);
+    res.sendStatus(401).send({
+      message: 'Unauthorized'
+    });
+  }
+});
+
+app.get('/profile', (req, res) => {
+  res.json({
+    email: '',
+  });
 });
 
 app.listen(4000, () => {

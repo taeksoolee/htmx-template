@@ -16,15 +16,18 @@
 
 class Auth {
   _loginPath = '/auth';
+  _refreshPath = '/auth/refresh';
+
   /**
    * @type {HTMLFormElement | null}
    */
   $$form = null;
-  /**
-   * @type {PersistController | null}
-   */
-  _persist = null;
   
+  _persist = new PersistController({
+    type: 'local'
+  });
+
+  _access$ = new SimpleObserver();
 
   /**
    * @type { ParseTokens }
@@ -43,15 +46,91 @@ class Auth {
   //   // required initial..
   // };
 
-  _refreshKey = null;
+  _refreshKey = 'refresh_key';
+
+  __data = {
+    __tokens: new Proxy({
+      __access: null,
+      __info: null
+    }, {
+      set: (obj, prop, value) => {
+        if (prop === '__access') {
+          if (typeof value === 'string' && !!value) {
+            obj[prop] = value;
+            try {
+              const { payload } = simpleJWTDecoder.decodeJWT(value);
+              obj['__info'] = payload;
+
+              const maxAge = (payload.exp * 1000) - Date.now();
+              setTimeout(() => {
+                this.setAccessToken();
+              }, maxAge - 5000); // 5초전 refresh
+            } catch(err) {
+              console.warn(err);
+            }
+          }
+        } else {
+          obj[prop] = value
+        }
+
+        return true;
+      },
+    }),
+  };
 
   constructor() {
-    this._refreshKey = 'refresh_key';
-    this._persist = new PersistController({
-      type: 'local'
+    navigation.addEventListener('navigate', () => {
+      console.log('!!');
+      this.setAccessToken();
     });
+  }
 
-    this._persist.getItem(this._refreshKey);
+  setAccessToken() {
+    const self = this;
+
+    const refresh = this._persist.getItem(this._refreshKey);
+    if (typeof refresh !== 'string') return;
+    
+    fetch(this._refreshPath, {
+      method: 'POST',
+      body: JSON.stringify({
+        refresh
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((res) => res.json())
+      .then(data => {
+        if (typeof data?.access !== 'string') return;
+        self.__data.__tokens.__access = data.access;
+
+        const tokens = {
+          refresh,
+          access: data.access,
+        }
+
+        this._logined(tokens);
+        this._access$.next({
+          isAuthorized: true,
+          tokens,
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        this._access$.next({
+          isAuthorized: false,
+          err,
+        });
+      });
+  }
+
+  logout() {
+    this._persist.removeItem(this._refreshKey);
+    this.__data.__tokens.__access = null;
+    this._access$.next({
+      isAuthorized: false,
+    });
   }
 
   login(payload) {
@@ -69,6 +148,11 @@ class Auth {
           if (typeof tokens.refresh === 'string') {
             this._persist.setItem(this._refreshKey, tokens.refresh);
           }
+          this.__data.__tokens.__access = tokens.access;
+          this._access$.next({
+            isAuthorized: true,
+            tokens,
+          });
           this._logined(tokens);
         }
       });
@@ -104,6 +188,7 @@ class Auth {
    * @param {{
    *  parseTokens?: ParseTokens,
    *  logined?: Logined,
+   *  refreshPath? string,
    * }} options 
    */
   config(options={}) {
@@ -113,10 +198,28 @@ class Auth {
     if (typeof options.logined === 'function') {
       this._logined = options.logined;
     }
+    if (typeof options.refreshPath === 'string') {
+      this._refreshPath = options.refreshPath;
+    }
   }
 
   get _refresh() {
     return this._persist.getItem(this._refreshKey);
+  }
+
+  get access() {
+    return auth.__data.__tokens.__access;
+  }
+
+  get info() {
+    return auth.__data.__tokens.__info;
+  }
+
+  /**
+   * @type {() => SimpleObserver}
+   */
+  get access$() {
+    return this._access$;
   }
 }
 
@@ -165,6 +268,32 @@ const cookieStorage = new (class CookieStorage {
     });
   }
 })();
+
+class SimpleObserver {
+  _map = new Map();
+
+  _randomNumber() {
+    return Date.now();
+  }
+
+  next(payload) {
+    this._map.keys().forEach(key => {
+      const fn = this._map.get(key);
+      typeof fn === 'function' && fn(payload);
+    });
+  }
+
+  subscribe(fn) {
+    if (typeof fn !== 'function') return null;
+    const id = `${this._randomNumber()}`;
+    this._map.set(id, fn);
+    return id;
+  }
+
+  unsubscribe(id) {
+    return this._map.delete(id);
+  }
+}
 
 class PersistController {
   /**
@@ -226,3 +355,24 @@ customElements.define('login-wrapper', class LoginForm extends HTMLElement {
   // attributeChangedCallback(name, oldValue, newValue) { }
 });
 
+class SimpleJWTDecoder {
+  _base64UrlDecode(str) {
+    // Base64URL 디코딩 함수
+    return decodeURIComponent(atob(str.replace(/-/g, '+').replace(/_/g, '/')));
+  }
+  
+  decodeJWT(token) {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new Error('Invalid JWT');
+    }
+  
+    return {
+      header: JSON.parse(this._base64UrlDecode(parts[0])),
+      payload: JSON.parse(this._base64UrlDecode(parts[1])),
+      signature: parts[2],
+    };
+  }
+}
+
+const simpleJWTDecoder = new SimpleJWTDecoder();

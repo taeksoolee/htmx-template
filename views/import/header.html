@@ -15,6 +15,24 @@
       return {
         access, refresh
       }
+    },
+    // refreshPath: '/auth/refresh' // option
+  });
+
+  // front에서 리턴
+  auth.access$.subscribe(({
+    isAuthorized, // : boolean
+    tokens, // tokens?: {access: string, refresh: string}
+    err, // err?: Error
+  }) => {
+    if (isAuthorized) {
+      if (location.pathname === '/login') {
+        location.href = '/'
+      }
+    } else {
+
     }
-  })
+  });
+
+  // auth.logout();
 </script>
