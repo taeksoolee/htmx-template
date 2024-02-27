@@ -133,5 +133,5 @@ app.get('/profile', (req, res) => {
 });
 
 app.listen(4000, () => {
-  console.log('🚀 port is 4000');
+  console.log('🚀 http://localhost:4000');
 });

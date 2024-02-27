@@ -4,6 +4,7 @@
   </a>
   <ul>
     <li hx-boost="true">
+      <a href="/profile">Profile</a>
     </li>
     <li hx-boost="true">
       <a href="/login">Login</a>
@@ -13,3 +14,21 @@
     </li>
   </ul>
 </nav>
+
+<script>
+  console.log('!');
+  auth.access$.subscribe(({
+    isAuthorized, // : boolean
+    tokens, // tokens?: {access: string, refresh: string}
+    err, // err?: Error
+  }) => {
+    if (isAuthorized) {
+      document.querySelector('a[href="/profile"]').style.display = 'none';
+      document.querySelector('a[href="/login"]').style.display = 'inline';
+    } else {
+      document.querySelector('a[href="/profile"]').style.display = 'inline';
+      document.querySelector('a[href="/login"]').style.display = 'none';
+      
+    }
+  });
+</script>

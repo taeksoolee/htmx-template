@@ -79,8 +79,8 @@ class Auth {
   };
 
   constructor() {
+    this.setAccessToken();
     navigation.addEventListener('navigate', () => {
-      console.log('!!');
       this.setAccessToken();
     });
   }
@@ -272,11 +272,15 @@ const cookieStorage = new (class CookieStorage {
 class SimpleObserver {
   _map = new Map();
 
+  _list = [];
+
   _randomNumber() {
     return Date.now();
   }
 
   next(payload) {
+    console.log(payload);
+    this._list.push(payload);
     this._map.keys().forEach(key => {
       const fn = this._map.get(key);
       typeof fn === 'function' && fn(payload);
@@ -285,8 +289,11 @@ class SimpleObserver {
 
   subscribe(fn) {
     if (typeof fn !== 'function') return null;
+
     const id = `${this._randomNumber()}`;
     this._map.set(id, fn);
+    console.log(this._list);
+    this._list.forEach(payload => fn(payload));
     return id;
   }
 
