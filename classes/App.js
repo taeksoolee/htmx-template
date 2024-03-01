@@ -2,15 +2,24 @@ const fs = require('fs');
 
 const express = require('express');
 const nunjucks = require('nunjucks');
+const cors = require('cors');
+
+const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 
 class App {
   _app;
   constructor() {
     const app = express();
 
+    app.use(cors({
+      origin: '*',
+    }));
+
     app.use(express.static('static'));
     app.use(express.json()); // JSON parser
     app.use(express.urlencoded({ extended: false} )); // 'Content-Type': 'application/x-www-form-urlencoded'
+
 
     this._app = app;
   }
@@ -53,12 +62,31 @@ class App {
     return this;
   }
 
+  session() {
+    const app = this._app;
+
+    // app.set('trust proxy', 1)  // production
+    app.use(session({
+      secret: 'Haezoom Secret!@#',
+      resave: false,
+      saveUninitialized: true,
+      cookie: {
+        // secure: true,
+      },
+      store: new FileStore(),
+    }));
+
+    return this;
+  }
+
   regist(fn) {
     fn(this._app);
     return this;
   }
 
+
   listen(port=4000) {
+    const app = this._app;
     app.listen(port, () => {
       console.log(`🚀 http://localhost:${port}`);
     });
